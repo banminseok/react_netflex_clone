@@ -1,11 +1,11 @@
-import { AnimatePresence, motion, useViewportScroll } from "framer-motion";
+import { AnimatePresence, motion, useScroll } from "framer-motion";
 import { useState } from "react";
 import { useQuery } from "react-query";
 import { useMatch, useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import { CategoryType, getMovies, IGetMovesResult } from "../api";
+import { CategoryType, getMovies, IGetMoviesResult, IMove } from "../api";
+import DetailMovie from "../components/DetailMovie";
 import Slider from "../components/Slider";
-import useWindowDimensions from "../useWidowDimensions";
 import { makeImagePath } from "../utilities";
 
 const Wrapper = styled.div`
@@ -34,7 +34,6 @@ const Overview = styled.p`
   font-size:30px;
 `
 
-
 const Overlay = styled(motion.div)`
   position: fixed;
   top: 0;
@@ -45,7 +44,7 @@ const Overlay = styled(motion.div)`
 `;
 const BigMovie = styled(motion.div)`
   position: absolute;
-  width: 40vw;
+  width: 50vw;
   height: 70vh; 
   left: 0;
   right: 0;
@@ -60,70 +59,109 @@ const BigCover = styled.div`
   background-size: cover;
   background-position: center center;
   height: 400px;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 50px;
+  img {
+    width: 25%;
+    margin-right: 20px;
+  }
 `;
 
+
+const CoverRight = styled.div`
+  width: 80%;
+  height: 77%;
+  position: relative;
+`;
 const BigTitle = styled.h3`
   color: ${(props) => props.theme.white.lighter};
-  padding: 20px;
-  font-size: 46px;
-  position: relative;
-  top: -80px;
+  padding: 10px;
+  font-size: 35px;
+  width: 300px;
 `;
 const BigOverview = styled.p`
-  padding: 20px;
+  padding: 10px 50px;
   position: relative;
-  top: -80px;
+  top: -55px;
+  height: 30%;
+  overflow: auto;
+  line-height: 23px;
   color: ${(props) => props.theme.white.lighter};
+  word-spacing: 3px;
+`;
+const IconGroups = styled.div`
+  width: 150px;
+  height: 50px;
+  position: absolute;
+  bottom: 0;
+  /* margin: 200px 0 0 10px; */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+`;
+const AgeInfo = styled.div<{ isadult: boolean }>`
+  width: 42px;
+  height: 42px;
+  background-color: ${(props) => (props.isadult ? props.theme.red : "#019267")};
+  font-size: 25px;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 12px;
+  line-height: 40px;
+`;
+const GradeScore = styled.div`
+  display: flex;
+  gap: 6px;
+  width: 80px;
+  height: 30px;
+  border: solid 1px #fed049;
+  border-radius: 10px;
+  justify-content: center;
+  align-items: center;
+  color: #fed049;
 `;
 
 
 function Home() {
   const navigate = useNavigate();
-  const bigMovieMatch = useMatch("/movies/:movieId");
-  const { scrollY } = useViewportScroll();
-  const { data, isLoading } = useQuery<IGetMovesResult>(
+  const { scrollY } = useScroll();
+  // 현재 상영작 API
+  const { data, isLoading } = useQuery<IGetMoviesResult>(
     ["movies", "nowPlaying"],
-    getMovies
+    () => getMovies(CategoryType.now_playing)
   );
+  const [clickedMovie, setClickedMovie] = useState<IMove>();
+  // 클릭한 박스의 url에 id 값으로 데이터 필터링하기
+  const bigMovieMatch = useMatch(`/movies/:movieId`);
+  // const clickedMovie =
+  //   bigMovieMatch?.params.movieId &&
+  //   data?.results.find((movie) => String(movie.id) === bigMovieMatch.params.movieId);
+
   const onOverlayClicked = () => {
     navigate(`/`);
   }
-  const clickedMovie =
-    bigMovieMatch?.params.movieId &&
-    data?.results.find((movie) => String(movie.id) === bigMovieMatch.params.movieId);
+  const selectMovie = (data: IMove) => {
+    setClickedMovie(data);
+  }
   return <Wrapper>
     {isLoading ? (
       <Loader>Loading...</Loader>
     ) : (
       <>
-        <Banner
-
-          bgphoto={makeImagePath(data?.results[0].backdrop_path || "")}
-        >
+        <Banner bgphoto={makeImagePath(data?.results[0].backdrop_path || "")}        >
           <Title>{data?.results[0].title}</Title>
           <Overview>{data?.results[0].overview}</Overview>
         </Banner>
-        <Slider sortMenu="movies" category={CategoryType.now_playing} />
+        <Slider sortMenu="movies" category={CategoryType.now_playing} selectMovie={selectMovie} />
+        <Slider sortMenu="movies" category={CategoryType.upcoming} selectMovie={selectMovie} />
+        <Slider sortMenu="movies" category={CategoryType.popular} selectMovie={selectMovie} />
+        <Slider sortMenu="movies" category={CategoryType.top_rated} selectMovie={selectMovie} />
 
         <AnimatePresence>
           {bigMovieMatch ? (
-            <>
-              <Overlay onClick={onOverlayClicked} animate={{ opacity: 1 }}></Overlay>
-              <BigMovie style={{ top: scrollY.get() + 100 }} layoutId={bigMovieMatch.params.movieId} >
-                {clickedMovie && <>
-                  <BigCover
-                    style={{
-                      backgroundImage: `linear-gradient(to top, black, transparent), url(${makeImagePath(
-                        clickedMovie.backdrop_path,
-                        "w500"
-                      )})`,
-                    }}
-                  />
-                  <BigTitle>{clickedMovie.title}</BigTitle>
-                  <BigOverview>{clickedMovie.overview}</BigOverview>
-                </>}
-              </BigMovie>
-            </>
+            <DetailMovie scrollY={scrollY.get()} layoutId={bigMovieMatch.params.movieId + ""} clickedMovie={clickedMovie} />
           ) : null}
         </AnimatePresence>
       </>

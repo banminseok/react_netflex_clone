@@ -16,8 +16,11 @@ export interface IMove {
   title: string;
   overview: string;
   release_date: string;
+  name?: string;
+  vote_average: number;
+  adult: boolean;
 }
-export interface IGetMovesResult {
+export interface IGetMoviesResult {
   dates: {
     maximum: string;
     minimum: string;
@@ -30,15 +33,35 @@ export interface IGetMovesResult {
 
 export enum CategoryType {
   "now_playing" = "now_playing",
-  "Latest movies" = "Latest movies",
+  "latest" = "latest",
   "upcoming" = "upcoming",
   "popular" = "popular",
   "top_rated" = "top_rated",
+  "on_the_air" = "on_the_air",
+  "airing_today" = "airing_today",
+  "tv" = "tv",
+  "movie" = "movie",
 }
 
-export function getMovies() {
-  return fetch(`${BASE_PATH}/movie/now_playing?api_key=${API_KEY}&region=kr`)
-    .then(
-      (response) => response.json()
-    );
+export async function getMovies(category: CategoryType) {
+  return await fetch(
+    `${BASE_PATH}/movie/${category}?api_key=${API_KEY}&page=1&region=kr`
+  ).then((resp) => resp.json());
+}
+export async function getTvShow(tvCategory: CategoryType) {
+  return await fetch(
+    `${BASE_PATH}/tv/${tvCategory}?api_key=${API_KEY}&language=en-US&page=1`
+  ).then((resp) => resp.json());
+}
+
+export async function getMoviesByKeyword(keyword: string) {
+  return await fetch(
+    `${BASE_PATH}/search/movie?api_key=${API_KEY}&language=en-US&query=${keyword}&page=1&region=kr`
+  ).then((resp) => resp.json());
+}
+
+export async function getTvShowByKeyword(keyword: string) {
+  return await fetch(
+    `${BASE_PATH}/search/tv?api_key=${API_KEY}&language=en-US&query=${keyword}&page=1`
+  ).then((resp) => resp.json());
 }
