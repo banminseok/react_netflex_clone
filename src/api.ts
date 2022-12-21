@@ -28,6 +28,14 @@ export interface IGetMovesResult {
   total_results: number;
 }
 
+export enum CategoryType {
+  "now_playing" = "now_playing",
+  "Latest movies" = "Latest movies",
+  "upcoming" = "upcoming",
+  "popular" = "popular",
+  "top_rated" = "top_rated",
+}
+
 export function getMovies() {
   return fetch(`${BASE_PATH}/movie/now_playing?api_key=${API_KEY}&region=kr`)
     .then(
